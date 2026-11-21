@@ -3,6 +3,7 @@ using System.ComponentModel;
 using System.Core.Extensions;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using Daybreak.Configuration.Options;
 using Daybreak.Shared.Models;
 using Daybreak.Shared.Models.Api;
 using Daybreak.Shared.Models.LaunchConfigurations;
@@ -12,6 +13,8 @@ using Daybreak.Shared.Services.ApplicationLauncher;
 using Daybreak.Shared.Services.LaunchConfigurations;
 using Daybreak.Shared.Services.Notifications;
 using Daybreak.Shared.Services.Onboarding;
+using Daybreak.Shared.Services.Options;
+using Microsoft.Extensions.Options;
 using TrailBlazr.Services;
 using TrailBlazr.ViewModels;
 
@@ -23,7 +26,9 @@ public sealed class LaunchViewModel(
     IDaybreakApiService daybreakApiService,
     ILaunchConfigurationService launchConfigurationService,
     IOnboardingService onboardingService,
-    IApplicationLauncher applicationLauncher
+    IApplicationLauncher applicationLauncher,
+    IOptionsMonitor<LauncherOptions> launcherOptions,
+    IOptionsProvider optionsProvider
 ) : ViewModelBase<LaunchViewModel, LaunchView>, INotifyPropertyChanged, IDisposable
 {
     private static readonly TimeSpan LaunchTimeout = TimeSpan.FromSeconds(10);
@@ -35,6 +40,8 @@ public sealed class LaunchViewModel(
         launchConfigurationService.ThrowIfNull();
     private readonly IOnboardingService onboardingService = onboardingService.ThrowIfNull();
     private readonly IApplicationLauncher applicationLauncher = applicationLauncher.ThrowIfNull();
+    private readonly IOptionsMonitor<LauncherOptions> launcherOptions = launcherOptions.ThrowIfNull();
+    private readonly IOptionsProvider optionsProvider = optionsProvider.ThrowIfNull();
 
     private CancellationTokenSource? cancellationTokenSource;
     private string? autoLaunchConfigurationId;
@@ -71,6 +78,18 @@ public sealed class LaunchViewModel(
     }
 
     public bool IsLaunching { get; private set; }
+
+    public bool UseCardLayout => this.launcherOptions.CurrentValue.UseCardLayout;
+
+    public void ToggleLayout()
+    {
+        var options = this.launcherOptions.CurrentValue;
+        options.UseCardLayout = !options.UseCardLayout;
+        this.optionsProvider.SaveOption(options);
+        this.IsDropdownOpen = false;
+        this.OnPropertyChanged(nameof(this.UseCardLayout));
+        this.RefreshView();
+    }
 
     public bool IsDropdownOpen
     {

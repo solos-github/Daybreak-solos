@@ -3,7 +3,16 @@
 @using Daybreak.Shared.Models.ColorPalette
 @page "/launch"
 
+<div class="layout-toggle-container">
+    <button class="layout-toggle-button" title="@(this.ViewModel.UseCardLayout ? "Switch to classic view" : "Switch to card view")"
+            @onclick="this.ViewModel.ToggleLayout">
+        @(this.ViewModel.UseCardLayout ? "Classic view" : "Card view")
+    </button>
+</div>
+
 <div class="launch-container">
+@if (this.ViewModel.UseCardLayout)
+{
     <div class="account-grid">
         @foreach (var config in this.ViewModel.LaunchConfigurations)
         {
@@ -28,7 +37,67 @@
             </div>
         }
     </div>
+}
+else
+{
+    <div class="launch-button-container">
+        <!-- Main Launch Button with Dropdown -->
+        <div class="launch-button-group" style="@this.GetButtonGroupStyle()">
+            <!-- Main Launch Button -->
+            <button class="launch-button @(this.ViewModel.CanLaunch ? "enabled" : "disabled")"
+                    @onclick="this.ViewModel.LaunchSelectedConfiguration">
+                <div class="launch-button-content">
+                    @if (this.ViewModel.IsLaunching)
+                    {
+                        <div class="spinner" />
+                    }
+                    <div class="launch-text-container">
+                        <span class="launch-text">@this.ViewModel.LaunchButtonText</span>
+                        @if (!string.IsNullOrEmpty(this.ViewModel.LaunchButtonSubtext))
+                        {
+                            <span class="launch-subtext">@this.ViewModel.LaunchButtonSubtext</span>
+                        }
+                    </div>
+                </div>
+            </button>
+            
+            <!-- Dropdown Arrow Button -->
+            <button class="dropdown-toggle-button @(this.ViewModel.LaunchConfigurations.Any() ? "enabled" : "disabled")"
+                    @onclick="this.ViewModel.ToggleDropdown">
+                <span class="dropdown-arrow @(this.ViewModel.IsDropdownOpen ? "open" : "")">⏷</span>
+            </button>
+        </div>
+        
+        <!-- Dropdown Menu -->
+        @if (this.ViewModel.IsDropdownOpen && this.ViewModel.LaunchConfigurations.Any())
+        {
+            <div class="dropdown-menu" @onclick:stopPropagation="true">
+                @foreach (var config in this.ViewModel.LaunchConfigurations.Where(c => c != this.ViewModel.SelectedConfiguration))
+                {
+                    <div class="dropdown-item @(config == ViewModel.SelectedConfiguration ? "selected" : "")"
+                         style="@this.GetDropdownItemStyle(config)"
+                         @onclick="() => this.ViewModel.SelectConfiguration(config)">
+                        <div class="config-info">
+                            <div class="config-name">@(config.Configuration?.Name is null or ""
+                                ? config.Configuration?.Credentials?.Username ?? "Unknown User"
+                                : config.Configuration.Name)</div>
+                            @if (!string.IsNullOrEmpty(config.Configuration?.ExecutablePath))
+                            {
+                                <div class="config-path">@config.Configuration.ExecutablePath</div>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+}
 </div>
+
+@if (!this.ViewModel.UseCardLayout && this.ViewModel.IsDropdownOpen)
+{
+    <div class="dropdown-backdrop" @onclick="this.ViewModel.CloseDropdown" />
+}
 
 @code {
     [Parameter]
@@ -49,5 +118,39 @@
 
         var accentColor = AccentColor.Accents.FirstOrDefault(a => a.Name.ToString() == colorName);
         return accentColor is null ? string.Empty : $"border-left: 6px solid {accentColor.Hex};";
+    }
+
+    private string GetButtonGroupStyle()
+    {
+        var colorName = this.ViewModel.SelectedConfiguration?.Configuration?.Color;
+        if (string.IsNullOrWhiteSpace(colorName))
+        {
+            return string.Empty;
+        }
+
+        var accentColor = AccentColor.Accents.FirstOrDefault(a => a.Name.ToString() == colorName);
+        if (accentColor is null)
+        {
+            return string.Empty;
+        }
+
+        return $"background: {accentColor.Hex};";
+    }
+
+    private string GetDropdownItemStyle(LauncherViewContext config)
+    {
+        var colorName = config.Configuration?.Color;
+        if (string.IsNullOrWhiteSpace(colorName))
+        {
+            return string.Empty;
+        }
+
+        var accentColor = AccentColor.Accents.FirstOrDefault(a => a.Name.ToString() == colorName);
+        if (accentColor is null)
+        {
+            return string.Empty;
+        }
+
+        return $"border-left: 4px solid {accentColor.Hex};";
     }
 }

@@ -1,4 +1,4 @@
-﻿using System.Text.Json.Serialization;
+using System.Text.Json.Serialization;
 using Daybreak.Shared.Attributes;
 
 namespace Daybreak.Configuration.Options;
@@ -54,4 +54,11 @@ public sealed class LauncherOptions
         Description = "If true, the launcher will save its position on the screen between launching"
     )]
     public bool SaveWindowPosition { get; set; }
+
+    [JsonPropertyName(nameof(UseCardLayout))]
+    [OptionName(
+        Name = "Card Layout",
+        Description = "If true, the launch view shows all accounts as cards. If false, it shows the classic launch button with an account dropdown"
+    )]
+    public bool UseCardLayout { get; set; } = true;
 }
