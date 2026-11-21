@@ -1,4 +1,4 @@
-﻿using System.Collections.ObjectModel;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Core.Extensions;
 using System.Diagnostics;
@@ -153,6 +153,36 @@ public sealed class LaunchViewModel(
         }
     }
 
+    public async Task LaunchConfiguration(LauncherViewContext configuration)
+    {
+        if (this.IsLaunching)
+        {
+            return;
+        }
+
+        this.SelectedConfiguration = configuration;
+        this.UpdateCanLaunch();
+        await this.LaunchSelectedConfiguration();
+    }
+
+    public bool CanInteract(LauncherViewContext configuration) =>
+        !this.IsLaunching && (configuration.CanLaunch || configuration.CanAttach || configuration.CanKill);
+
+    public string GetCardButtonText(LauncherViewContext configuration)
+    {
+        if (this.IsLaunching && configuration == this.SelectedConfiguration)
+        {
+            return "Launching...";
+        }
+
+        if (configuration.CanKill)
+        {
+            return "Kill";
+        }
+
+        return configuration.CanAttach ? "Attach" : "Launch";
+    }
+
     public void SelectConfiguration(LauncherViewContext configuration)
     {
         if (this.SelectedConfiguration != configuration)
@@ -291,8 +321,8 @@ public sealed class LaunchViewModel(
 
         foreach (var config in this.LaunchConfigurations)
         {
-            var isSelected = config == this.SelectedConfiguration;
-            await this.CheckGameState(config, isSelected, cancellationToken);
+            // Every configuration gets its own state so each account card can show Launch/Attach/Kill.
+            await this.CheckGameState(config, true, cancellationToken);
         }
 
         this.UpdateCanLaunch();
